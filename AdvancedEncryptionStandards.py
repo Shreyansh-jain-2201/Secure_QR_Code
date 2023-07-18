@@ -1,8 +1,9 @@
+import itertools
 def createGroups(bits,number):
     output = []
     groups = int(len(number)/bits)
-    for j in range(groups):
-        output.append(number[0:bits])
+    for _ in range(groups):
+        output.append(number[:bits])
         number = number[bits:]
     return output
 
@@ -38,16 +39,13 @@ def BinaryToHexadecimal(number):
           "1110" : 'E',
           "1111" : 'F' 
           }
-    output = ""
-    for i in number:
-        output += hex_table[i]
-    return output
+    return "".join(hex_table[i] for i in number)
 
 
 def createInputMatrix(plaintext):
     hex_text = ""
     output = []
-    
+
     if len(plaintext)%32:
         plaintext += (32 - len(plaintext)%16)*bogusElement(plaintext)
     plaintexts = createGroups(32, plaintext)
@@ -56,13 +54,10 @@ def createInputMatrix(plaintext):
                             [0,0,0,0],
                             [0,0,0,0],
                             [0,0,0,0]]
-        hex_text = ""
-        for i in plaintext:
-            hex_text +=  i
-        for i in range(4):
-            for j in range(4):
-                plaintext_matrix[j][i] = hex_text[0:2]
-                hex_text = hex_text[2:]
+        hex_text = "".join(plaintext)
+        for i, j in itertools.product(range(4), range(4)):
+            plaintext_matrix[j][i] = hex_text[:2]
+            hex_text = hex_text[2:]
         output.append(plaintext_matrix)
     return output
     
@@ -85,11 +80,8 @@ def hexadecimalToBinary(word):
           'D' : "1101",
           'E' : "1110",
           'F' : "1111" }
-    
-    output = ""
-    for i in word:
-        output += hex_table[i]
-    return output
+
+    return "".join(hex_table[i] for i in word)
 
 
 def stringToHex(word):
@@ -106,12 +98,9 @@ def stringToHex(word):
                  '[': 'B6', ']': 'B7', ';': 'B8', ':': 'B9', "'": 'BA', '"': 'BB', '?': 'BC', 
                  '/': 'BD', ' ': '00', '1': 'BF', '2': 'A0', '3': 'A1', '4': 'A2', '5': 'A3', 
                  '6': 'A4', '7': 'A5', '8': 'A6', '9': 'A7', '0': 'A8'}
-    
-    
-    output = ""
-    for i in word:
-        output += wordToHex.get(i)
-    return output
+
+
+    return "".join(wordToHex.get(i) for i in word)
 
 
 def HexToString(word):
@@ -138,19 +127,13 @@ def HexToString(word):
 
 
 def createOutputString(matrix):
-    output = ""
-    for i in range(4):
-        for j in range(4):
-            output += matrix[j][i]
-    return output
+    return "".join(matrix[j][i] for i, j in itertools.product(range(4), range(4)))
  
     
 def xor(a,b):
     a = hexadecimalToBinary(a)
     b = hexadecimalToBinary(b)
-    output = ""
-    for i in range(len(a)):
-        output += str(int(a[i])^int(b[i]))
+    output = "".join(str(int(a[i])^int(b[i])) for i in range(len(a)))
     return BinaryToHexadecimal(output)
 
 
@@ -176,7 +159,7 @@ def s_Box(matrix):
          ['70', '3E', 'B5', '66', '48', '03', 'F6', '0E', '61', '35', '57', 'B9', '86', 'C1', '1D', '9E'], 
          ['E1', 'F8', '98', '11', '69', 'D9', '8E', '94', '9B', '1E', '87', 'E9', 'CE', '55', '28', 'DF'], 
          ['8C', 'A1', '89', '0D', 'BF', 'E6', '42', '68', '41', '99', '2D', '0F', 'B0', '54', 'BB', '16']]
-    
+
     map = {'0': 0, 
          '1': 1, 
          '2': 2, 
@@ -198,7 +181,7 @@ def s_Box(matrix):
             for j in range(len(matrix[i])):
                 matrix[i][j] = s_box[map[matrix[i][j][0]]][map[matrix[i][j][1]]]
         return matrix
-    except:
+    except Exception:
         for i in range(len(matrix)):
             matrix[i] = s_box[map[matrix[i][0]]][map[matrix[i][1]]]
         return matrix
@@ -250,14 +233,14 @@ def galois_mult(a, b):
     b = int(b, 16)
     p = 0
     hi_bit_set = 0
-    for i in range(8):
+    for _ in range(8):
         if b & 1 == 1: p ^= a
         hi_bit_set = a & 128
         a <<= 1
         if hi_bit_set == 128: a ^= 27
         b >>= 1
     if len(hex(p % 256)[2:]) == 1:
-        return "0" + hex(p % 256)[2:]
+        return f"0{hex(p % 256)[2:]}"
     else:
         return hex(p % 256)[2:]
 
@@ -265,9 +248,7 @@ def galois_mult(a, b):
 def shiftRows(matrix):
     output = []
     for i in range(len(matrix)):
-        row = []
-        for j in range(len(matrix[i])):
-            row.append(matrix[i][(j+i)%len(matrix[i])])
+        row = [matrix[i][(j+i)%len(matrix[i])] for j in range(len(matrix[i]))]
         output.append(row)
     return output
 
@@ -275,9 +256,7 @@ def shiftRows(matrix):
 def inv_shiftRows(matrix):
     output = []
     for i in range(len(matrix)):
-        row = []
-        for j in range(len(matrix[i])):
-            row.append(matrix[i][(j-i)%len(matrix[i])])
+        row = [matrix[i][(j-i)%len(matrix[i])] for j in range(len(matrix[i]))]
         output.append(row)
     return output
 
@@ -291,13 +270,10 @@ def mixColumns(matrix):
               [0,0,0,0],
               [0,0,0,0],
               [0,0,0,0]]
-    
-    for i in range(4):
-        for j in range(4):
-            r = []
-            for k in range(4):
-                r.append(galois_mult(static[i][k], matrix[k][j]))
-            output[i][j] = xor(xor(xor(r[0],r[1]),r[2]),r[3])
+
+    for i, j in itertools.product(range(4), range(4)):
+        r = [galois_mult(static[i][k], matrix[k][j]) for k in range(4)]
+        output[i][j] = xor(xor(xor(r[0],r[1]),r[2]),r[3])
     return output
 
 
@@ -310,13 +286,10 @@ def inv_mixColumns(matrix):
               [0,0,0,0],
               [0,0,0,0],
               [0,0,0,0]]
-    
-    for i in range(4):
-        for j in range(4):
-            r = []
-            for k in range(4):
-                r.append(galois_mult(static[i][k], matrix[k][j]))
-            output[i][j] = xor(xor(xor(r[0],r[1]),r[2]),r[3])
+
+    for i, j in itertools.product(range(4), range(4)):
+        r = [galois_mult(static[i][k], matrix[k][j]) for k in range(4)]
+        output[i][j] = xor(xor(xor(r[0],r[1]),r[2]),r[3])
     return output
 
 
@@ -342,9 +315,7 @@ def transpose(matrix):
     columns = len(matrix[0])
     output = []
     for j in range(columns):
-        row = []
-        for i in range(rows):
-           row.append(matrix[i][j])
+        row = [matrix[i][j] for i in range(rows)]
         output.append(row)
 
     return output
@@ -353,36 +324,28 @@ def transpose(matrix):
 def keyExpansion(key):
     words = []
     keys = []
-    output = []
-    for i in range(4):
+    for _ in range(4):
         l = []
-        for j in range(4):
-            l.append(key[0:2])
+        for _ in range(4):
+            l.append(key[:2])
             key = key[2:]
         words.append(l)
-    for i in range(40):
+    for _ in range(40):
         l = []
         if not len(words)%4:
-            l1 = roundFunction(words[-1], int(len(words)/4))
-            for j in range(4):
-                l.append(xor(words[-4][j], l1[j]))
+            l1 = roundFunction(words[-1], len(words) // 4)
+            l.extend(xor(words[-4][j], l1[j]) for j in range(4))
         else:
-            for j in range(4):
-                l.append(xor(words[-4][j],words[-1][j]))
+            l.extend(xor(words[-4][j],words[-1][j]) for j in range(4))
         words.append(l)
-    for i in range(11):
-        keys.append(words[0:4])
+    for _ in range(11):
+        keys.append(words[:4])
         words = words[4:]
-    for i in range(len(keys)):
-        output.append(transpose(keys[i]))
-    return output
+    return [transpose(key_) for key_ in keys]
 
 
 def reverse(matrix):
-    output = []
-    for i in reversed(range(len(matrix))):
-        output.append(matrix[i])
-    return output
+    return [matrix[i] for i in reversed(range(len(matrix)))]
 
 
 def addRoundKey(matrix, key):
@@ -395,9 +358,7 @@ def addRoundKey(matrix, key):
 def createKey(word):
     if len(word)%16:
         word = word + (16 - len(word)%16) * bogusElement(word)
-    output = ""
-    for i in word:
-        output += ''.join(format(ord(i), '08b'))
+    output = "".join(''.join(format(ord(i), '08b')) for i in word)
     return BinaryToHexadecimal(output)
 
 
