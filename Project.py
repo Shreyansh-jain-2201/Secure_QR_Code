@@ -1,79 +1,62 @@
 import qrcode
-import numpy as np
-from PIL import Image
 import base64
 from io import BytesIO
+from PIL import Image
+
 from AdvancedEncryptionStandards import encryption, decryption
 
 
-
-def QRencode(DeceptiveText, name):
-    # Name of the QR code Image file
+def generate_qr_code(data, name):
     qr = qrcode.QRCode(version=1, box_size=12)
-    # add data to the QR code
-    qr.add_data(DeceptiveText)
-    # compile the data into a QR code array
-    qr.make()
-    image = qr.make_image()
-    image.save(name)
+    qr.add_data(data)
+    qr.make(fit=True)
+    qr_image = qr.make_image(fill_color="black", back_color="white")
+    qr_image.save(name)
 
 
-def ImageToString(name):
-    # converts qr image to utf-8 string
-    with open(name, "rb") as image2string:
-        return(base64.standard_b64encode(image2string.read()).decode("utf-8"))
-
-def StringToImage(byte, newName):
-    # Opens the image from the byte array
-    decodeit = open(newName, 'wb')
-    # Writes the byte array to the image
-    decodeit.write(base64.standard_b64decode(byte))
-    decodeit.close()
+def image_to_string(image_path):
+    with open(image_path, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode("utf-8")
+    return encoded_string
 
 
-# main function
+def string_to_image(encoded_string, new_name):
+    decoded_bytes = base64.b64decode(encoded_string)
+    with open(new_name, "wb") as image_file:
+        image_file.write(decoded_bytes)
+
+
 def main():
+    secret_text = input("Enter the secret text: ")
+    deceptive_text = input("Enter the deceptive text: ")
+    key = input("Enter the secret encryption key: ")
 
-    SecretText = input("Enter the secret text: ")
-    DeceptiveText = input("Enter the deceptive text: ")
-    Key = input("Enter the secret key: ")
-    # Name of the QR code Image file
-    name = input("Enter the name of the orginal QRimage without secret text: ")
-    # Name of the QR code Image file after hiding secret text
-    newName = input("Enter the name of the new QRimage with secret text: ")
+    # Encrypt the secret text
+    cipher_text = encryption(secret_text, key).lower()
+    print("\nThe cipher text is:", cipher_text, "\n")
 
-    # Encrypting the text
-    # Generates the cipher text
+    # Generate QR code for deceptive text
+    generate_qr_code(deceptive_text, "WithoutSecretText.png")
 
-    cipherText = encryption(SecretText, Key).lower()
-    print("\n\n")
-    print("The cipher text is: ", cipherText, "\n")
-    print("\n")
+    # Read QR code image and convert it to a string
+    qr_image_string = image_to_string("WithoutSecretText.png")
 
-    # Encoding the Deceptive text onto a QR code
-    QRencode(DeceptiveText, name)
+    # Embed the secret cipher text into the QR code data
+    modified_qr_image_string = qr_image_string[:-32] + cipher_text + qr_image_string[-32:]
 
-    # Reading the QR code image
-    qrImage = ImageToString(name)
+    # Create a new QR code image with the embedded secret text
+    string_to_image(modified_qr_image_string, "WithSecretText.png")
+    print("\n\n----Image with the secret text has been created and sent to the receiver.----\n\n")
 
-    # Hiding the secret cipher text into the QR code data
-    qrImage = qrImage[0:-32] + cipherText + qrImage[-32:]
+    # Receiver receives the image and decodes the QR code
+    new_qr_image_string = image_to_string("WithSecretText.png")
+    print("The new QR image as decoded by the receiver is:", new_qr_image_string, "\n")
 
-    # Creating a new QR code image with the hidden text
-    byte = bytes(qrImage, 'utf-8')
-    StringToImage(byte, newName)
-    print("\n\n----Image with the secret text has been created and sent to the reciever.----\n\n")
+    # Receiver extracts the hidden cipher text from the QR code and decrypts it
+    cipher = new_qr_image_string[-len(cipher_text) - 32:-32].upper()
+    plaintext = decryption(cipher, key)
+    print("The plain text received by the receiver is:", plaintext, "\n")
 
-    # Reciever recieves the image reads the QR code
-    newQrImage = ImageToString(newName)
-    print("The new QR image as decoded by the reciever is: ", newQrImage)
-    print("\n")
-    
-    # Reciever obtains the hidden text ciphertext from the QR code and decrypts it
-    cipher = newQrImage[-len(cipherText)-32:-32].upper()
-    plaintext = decryption(cipher, Key)
-    print("\n")
-    print("The plain text recieved by the reciever is: ", plaintext, "\n")
 
 if __name__ == "__main__":
     main()
